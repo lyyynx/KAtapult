@@ -1,6 +1,9 @@
 import random
 from abc import ABCMeta, abstractmethod
 
+import cv2
+import numpy as np
+
 from building import Building
 from explosion import Explosion
 from tank import Tank
@@ -14,6 +17,7 @@ class TankGame(metaclass=ABCMeta):
         self.buildings: list[Building] = []
         self.tanks: list[Tank] = []
         self.explosions: list[Explosion] = []
+        self.screen: np.array = np.zeros((height, width, 3))
 
     @abstractmethod
     def create_buildings(self, number_of_buildings: int) -> None:
@@ -60,6 +64,9 @@ class TwoPlayerTankGame(TankGame):
     def start_game(self) -> None:
         self.create_buildings(3)
         self.place_tanks()
+        self.screen.fill(255)
+        self.draw_canvas()
+        self.draw_playground()
 
         while not self._check_hit():
             angle, force = self._get_command()
@@ -74,5 +81,25 @@ class TwoPlayerTankGame(TankGame):
         return False
 
     def _get_command(self) -> tuple[int, int]:
-        angle, force = input(f"Player {self.active_player}: Enter angle and force (i.e. 50 160) ").split()
+        angle, force = input(
+            f"Player {self.active_player}: Enter angle and velocity (i.e. 50 160) "
+        ).split()
+        # todo: validate input
         return angle, force
+
+    def draw_canvas(self) -> None:
+        self.screen = cv2.line(self.screen, (0, 0), (0, self.height), [0, 0, 0], 4)
+        self.screen = cv2.line(self.screen, (0, self.height), (self.width, self.height), [0, 0, 0], 4)
+        self.screen = cv2.line(self.screen, (self.width, 0), (self.width, self.height), [0, 0, 0], 4)
+        self.screen = cv2.line(self.screen, (0, 0), (self.width, 0), [0, 0, 0], 4)
+
+    def draw_playground(self) -> None:
+        for building in self.buildings:
+            self.screen = building.draw(self.screen)
+
+        for tank in self.tanks:
+            self.screen = tank.draw(self.screen)
+
+        cv2.imshow("battlefield", self.screen)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()

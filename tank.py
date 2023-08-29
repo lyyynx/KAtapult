@@ -2,6 +2,9 @@ import math
 from functools import cached_property
 from typing import Literal, Generator
 
+import cv2
+import numpy as np
+
 GRAVITATIONAL_CONSTANT = 9.81
 
 
@@ -19,6 +22,10 @@ class Tank:
             y_i = -0.5 * GRAVITATIONAL_CONSTANT * i ** 2 + velocity * math.sin(angle_) * i + self.height,
 
             yield x_i, y_i
+
+    def draw(self, screen: np.array) -> np.array:
+        screen = cv2.circle(screen, (self.x_position, self.height), 4, [255, 0, 0], -1)
+        return screen
 
     @cached_property
     def direction(self) -> Literal[1, -1]:
