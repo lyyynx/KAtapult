@@ -15,9 +15,10 @@ class TankGame(metaclass=ABCMeta):
         self.width = width
 
         self.buildings: list[Building] = []
-        self.tanks: list[Tank] = []
+        self.tanks: dict[int: Tank] = {}
         self.explosions: list[Explosion] = []
-        self.screen: np.array = np.zeros((height, width, 3))
+        self.screen = np.zeros((height, width))
+        self.game_over = False
 
     @abstractmethod
     def create_buildings(self, number_of_buildings: int) -> None:
@@ -34,7 +35,7 @@ class TankGame(metaclass=ABCMeta):
 
 class TwoPlayerTankGame(TankGame):
     def __init__(self) -> None:
-        super().__init__(300, 50)
+        super().__init__(300, 100)
 
         self.active_player = 1
 
@@ -48,18 +49,18 @@ class TwoPlayerTankGame(TankGame):
         buildings_on_left = [
             building.height
             for building in self.buildings
-            if building.x_position - building.width < 10
+            if building.x_position - building.width < 5
         ]
         max_left_height = max(buildings_on_left) if len(buildings_on_left) > 0 else 0
-        self.tanks.append(Tank(5, max_left_height))
+        self.tanks[1] = Tank(5, max_left_height)
 
         buildings_on_right = [
             building.height
             for building in self.buildings
-            if building.x_position + building.width > self.width - 10
+            if building.x_position + building.width > self.width - 5
         ]
         max_right_height = max(buildings_on_right) if len(buildings_on_right) > 0 else 0
-        self.tanks.append(Tank(self.width - 5, max_right_height))
+        self.tanks[-1] = Tank(self.width - 5, max_right_height)
 
     def start_game(self) -> None:
         self.create_buildings(3)
@@ -68,14 +69,32 @@ class TwoPlayerTankGame(TankGame):
         self.draw_canvas()
         self.draw_playground()
 
-        while not self._check_hit():
+        while not self.game_over:
             angle, force = self._get_command()
-            self.tanks[(self.active_player + 1) // 2].shoot(angle, force)
+            for projectile_x, projectile_y in self.tanks[self.active_player].shoot(angle, force):
+                x_, y_ = int(projectile_x), int(projectile_y)
+                self.screen = cv2.circle(self.screen, (x_, y_), 2, [0.2], 2)
+                if self._check_hit(x_, y_):
+                    # todo: do hit
+                    print("hit")
+                    break
+
+                if projectile_x < 0 or projectile_x > self.width or projectile_y < 0:
+                    print("out")
+                    break
+
+            self.draw_playground()
+            self.screen.fill(255)
             self.active_player *= -1
 
-    def _check_hit(self) -> bool:
-        for tank in self.tanks:
-            if tank.hit:
+    def _check_hit(self, x: int, y: int) -> bool:
+        for tank in self.tanks.values():
+            if tank.is_hit(x, y):
+                self.game_over = True
+                return True
+
+        for building in self.buildings:
+            if building.is_hit(x, y):
                 return True
 
         return False
@@ -85,21 +104,23 @@ class TwoPlayerTankGame(TankGame):
             f"Player {self.active_player}: Enter angle and velocity (i.e. 50 160) "
         ).split()
         # todo: validate input
-        return angle, force
+        return int(angle), int(force)
 
     def draw_canvas(self) -> None:
-        self.screen = cv2.line(self.screen, (0, 0), (0, self.height), [0, 0, 0], 4)
-        self.screen = cv2.line(self.screen, (0, self.height), (self.width, self.height), [0, 0, 0], 4)
-        self.screen = cv2.line(self.screen, (self.width, 0), (self.width, self.height), [0, 0, 0], 4)
-        self.screen = cv2.line(self.screen, (0, 0), (self.width, 0), [0, 0, 0], 4)
+        self.screen = cv2.line(self.screen, (0, 0), (0, self.height), [0], 4)
+        self.screen = cv2.line(self.screen, (0, self.height), (self.width, self.height), [0], 4)
+        self.screen = cv2.line(self.screen, (self.width, 0), (self.width, self.height), [0], 4)
+        self.screen = cv2.line(self.screen, (0, 0), (self.width, 0), [0], 4)
 
     def draw_playground(self) -> None:
+        # self.screen.fill(255)
+
         for building in self.buildings:
             self.screen = building.draw(self.screen)
 
-        for tank in self.tanks:
+        for tank in self.tanks.values():
             self.screen = tank.draw(self.screen)
 
-        cv2.imshow("battlefield", self.screen)
+        cv2.imshow("battlefield", cv2.flip(self.screen, 0))
         cv2.waitKey(0)
         cv2.destroyAllWindows()
