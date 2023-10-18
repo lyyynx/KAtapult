@@ -15,7 +15,7 @@ class TankGame(metaclass=ABCMeta):
         self.width = width
 
         self.buildings: list[Building] = []
-        self.tanks: dict[int: Tank] = {}
+        self.tanks: dict[int:Tank] = {}
         self.explosions: list[Explosion] = []
         self.screen = np.zeros((height, width))
         self.game_over = False
@@ -71,11 +71,12 @@ class TwoPlayerTankGame(TankGame):
 
         while not self.game_over:
             angle, force = self._get_command()
-            for projectile_x, projectile_y in self.tanks[self.active_player].shoot(angle, force):
+            for projectile_x, projectile_y in self.tanks[self.active_player].shoot(
+                angle, force * 10
+            ):
                 x_, y_ = int(projectile_x), int(projectile_y)
                 self.screen = cv2.circle(self.screen, (x_, y_), 2, [0.2], 2)
                 if self._check_hit(x_, y_):
-                    # todo: do hit
                     print("hit")
                     break
 
@@ -108,13 +109,15 @@ class TwoPlayerTankGame(TankGame):
 
     def draw_canvas(self) -> None:
         self.screen = cv2.line(self.screen, (0, 0), (0, self.height), [0], 4)
-        self.screen = cv2.line(self.screen, (0, self.height), (self.width, self.height), [0], 4)
-        self.screen = cv2.line(self.screen, (self.width, 0), (self.width, self.height), [0], 4)
+        self.screen = cv2.line(
+            self.screen, (0, self.height), (self.width, self.height), [0], 4
+        )
+        self.screen = cv2.line(
+            self.screen, (self.width, 0), (self.width, self.height), [0], 4
+        )
         self.screen = cv2.line(self.screen, (0, 0), (self.width, 0), [0], 4)
 
     def draw_playground(self) -> None:
-        # self.screen.fill(255)
-
         for building in self.buildings:
             self.screen = building.draw(self.screen)
 
@@ -122,5 +125,4 @@ class TwoPlayerTankGame(TankGame):
             self.screen = tank.draw(self.screen)
 
         cv2.imshow("battlefield", cv2.flip(self.screen, 0))
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        cv2.waitKey(10)

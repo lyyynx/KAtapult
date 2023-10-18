@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from tank import BLAST_RADIUS
+
 
 class Building:
     def __init__(self, x_position: int, height: int) -> None:
@@ -8,6 +10,7 @@ class Building:
         self.height = height
 
         self.width = 30
+        self.hits = []
 
     def draw(self, screen: np.array) -> np.array:
         screen = cv2.line(
@@ -32,10 +35,18 @@ class Building:
             2,
         )
 
+        for hit in self.hits:
+            screen = cv2.circle(screen, hit, BLAST_RADIUS, [0], 2)
+
         return screen
 
     def is_hit(self, x: int, y: int) -> bool:
-        if self.x_position - self.width <= x <= self.x_position + self.width and self.height > y:
+        if self.x_position - self.width // 2 <= x <= self.x_position + self.width // 2 and self.height > y:
+            for hit in self.hits:
+                if (x - hit[0])**2 + (y-hit[1])**2 < BLAST_RADIUS**2:
+                    return False
+
+            self.hits.append((x, y))
             return True
 
         return False
