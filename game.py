@@ -1,12 +1,17 @@
+import math
 import random
 from abc import ABCMeta, abstractmethod
 
 import cv2
 import numpy as np
+from pyaxidraw.axidraw import AxiDraw
 
 from building import Building
 from explosion import Explosion
-from tank import Tank
+from tank import Tank, BLAST_RADIUS
+
+PX_TO_INCH = 1 / 96
+ANGLE_TO_RADIANS = math.pi / 180
 
 
 class TankGame(metaclass=ABCMeta):
@@ -34,8 +39,9 @@ class TankGame(metaclass=ABCMeta):
 
 
 class TwoPlayerTankGame(TankGame):
-    def __init__(self) -> None:
-        super().__init__(300, 100)
+    def __init__(self, output: AxiDraw | None = None) -> None:
+        super().__init__(595, 375)
+        self.output = output
 
         self.active_player = 1
 
@@ -44,6 +50,8 @@ class TwoPlayerTankGame(TankGame):
             self.buildings.append(
                 Building(random.randint(0, self.width), random.randint(10, self.height))
             )
+            # todo: buildings go over right edge
+            # todo: when distance to edge too short, widen building to fit to edge
 
     def place_tanks(self) -> None:
         buildings_on_left = [
@@ -70,22 +78,33 @@ class TwoPlayerTankGame(TankGame):
         self.draw_playground()
 
         while not self.game_over:
+            projectile_path = []
             angle, force = self._get_command()
-            for projectile_x, projectile_y in self.tanks[self.active_player].shoot(
-                angle, force * 10
+            for i, (projectile_x, projectile_y) in enumerate(
+                self.tanks[self.active_player].shoot(angle, force * 10)
             ):
                 x_, y_ = int(projectile_x), int(projectile_y)
+                if (
+                    i % 10 in [0, 9]  # first and last dash point
+                    and i // 10 % 2 == 0  # each dash has width 10
+                    and 0 < x_ < self.width
+                    and 0 < y_ < self.height
+                ):
+                    projectile_path.append((x_, self.height - y_))
+
                 self.screen = cv2.circle(self.screen, (x_, y_), 2, [0.2], 2)
                 if self._check_hit(x_, y_):
+                    if isinstance(self.output, AxiDraw):
+                        self.draw_path(projectile_path)
+                        self.draw_circle((x_, self.height - y_), BLAST_RADIUS)
                     print("hit")
                     break
 
                 if projectile_x < 0 or projectile_x > self.width or projectile_y < 0:
+                    self.draw_path(projectile_path)
                     print("out")
                     break
 
-            self.draw_playground()
-            self.screen.fill(255)
             self.active_player *= -1
 
     def _check_hit(self, x: int, y: int) -> bool:
@@ -108,21 +127,93 @@ class TwoPlayerTankGame(TankGame):
         return int(angle), int(force)
 
     def draw_canvas(self) -> None:
-        self.screen = cv2.line(self.screen, (0, 0), (0, self.height), [0], 4)
-        self.screen = cv2.line(
-            self.screen, (0, self.height), (self.width, self.height), [0], 4
-        )
-        self.screen = cv2.line(
-            self.screen, (self.width, 0), (self.width, self.height), [0], 4
-        )
-        self.screen = cv2.line(self.screen, (0, 0), (self.width, 0), [0], 4)
+        if self.output is None:
+            self.screen = cv2.line(self.screen, (0, 0), (0, self.height), [0], 4)
+            self.screen = cv2.line(
+                self.screen, (0, self.height), (self.width, self.height), [0], 4
+            )
+            self.screen = cv2.line(
+                self.screen, (self.width, 0), (self.width, self.height), [0], 4
+            )
+            self.screen = cv2.line(self.screen, (0, 0), (self.width, 0), [0], 4)
+        elif isinstance(self.output, AxiDraw):
+            self.draw_rectangle((0, 0), (self.width, self.height))
+        else:
+            raise NotImplemented(f"Output device {self.output} not implemented")
 
     def draw_playground(self) -> None:
-        for building in self.buildings:
-            self.screen = building.draw(self.screen)
+        if self.output is None:
+            for building in self.buildings:
+                self.screen = building.draw(self.screen)
 
-        for tank in self.tanks.values():
-            self.screen = tank.draw(self.screen)
+            for tank in self.tanks.values():
+                self.screen = tank.draw(self.screen)
 
-        cv2.imshow("battlefield", cv2.flip(self.screen, 0))
-        cv2.waitKey(10)
+            cv2.imshow("battlefield", cv2.flip(self.screen, 0))
+            cv2.waitKey(10)
+        elif isinstance(self.output, AxiDraw):
+            for building in self.buildings:
+                self.draw_rectangle(
+                    (
+                        building.x_position - building.width // 2,
+                        self.height - building.height,
+                    ),
+                    (building.x_position + building.width // 2, self.height),
+                )
+
+            for tank in self.tanks.values():
+                self.draw_rectangle(
+                    (tank.x_position - 5, self.height - tank.y_position + 5),
+                    (tank.x_position + 5, self.height - tank.y_position - 5),
+                )
+
+    def draw_rectangle(
+        self, top_left: tuple[int, int], bottom_right: tuple[int, int]
+    ) -> None:
+        top_left_ = (top_left[0] * PX_TO_INCH, top_left[1] * PX_TO_INCH)
+        bottom_right_ = (bottom_right[0] * PX_TO_INCH, bottom_right[1] * PX_TO_INCH)
+
+        self.output.goto(*top_left_)
+        self.output.pendown()
+        self.output.lineto(top_left_[0], bottom_right_[1])
+        self.output.lineto(*bottom_right_)
+        self.output.lineto(bottom_right_[0], top_left_[1])
+        self.output.lineto(*top_left_)
+        self.output.penup()
+        self.output.goto(0, 0)
+
+    def draw_circle(self, center: tuple[int, int], radius: int) -> None:
+        circle_points = []
+        for phi in range(0, 360, 20):
+            x, y = (
+                radius * math.sin(phi * ANGLE_TO_RADIANS) + center[0],
+                radius * math.cos(phi * ANGLE_TO_RADIANS) + center[1],
+            )
+            if 0 < x < self.width and 0 < y < self.height:
+                circle_points.append((x * PX_TO_INCH, y * PX_TO_INCH))
+
+        self.output.goto(*circle_points[0])
+        self.output.pendown()
+
+        for point in circle_points:
+            self.output.lineto(*point)
+
+        self.output.penup()
+        self.output.goto(0, 0)
+
+    def draw_path(self, path: list[tuple[int, int]]) -> None:
+        path_ = [(point[0] * PX_TO_INCH, point[1] * PX_TO_INCH) for point in path]
+
+        self.output.goto(*path_[0])
+        self.output.pendown()
+
+        for i, point in enumerate(path_):
+            if i % 2 == 0:
+                self.output.pendown()
+            else:
+                self.output.penup()
+
+            self.output.goto(*point)
+
+        self.output.penup()
+        self.output.goto(0, 0)
