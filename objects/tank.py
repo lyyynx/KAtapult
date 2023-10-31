@@ -2,12 +2,8 @@ import math
 from functools import cached_property
 from typing import Literal, Generator
 
-import cv2
-import numpy as np
-
-GRAVITATIONAL_CONSTANT = 9.81
-HIT_RADIUS = 5
-BLAST_RADIUS = 10
+from utils.constants import HIT_RADIUS
+from utils.units import GRAVITATIONAL_CONSTANT
 
 
 class Tank:
@@ -20,16 +16,12 @@ class Tank:
         for i in range(HIT_RADIUS + 2, 1000):
             x_i = self.direction * i + self.x_position
             y_i = (
-                    - GRAVITATIONAL_CONSTANT * i**2 / (2*velocity*math.cos(angle_)**2)
+                    - GRAVITATIONAL_CONSTANT * i ** 2 / (2 * velocity * math.cos(angle_) ** 2)
                     + i * math.tan(angle_ * self.direction)
                     + self.y_position
             )
 
             yield x_i, y_i
-
-    def draw(self, screen: np.array) -> np.array:
-        screen = cv2.circle(screen, (self.x_position, self.y_position), 7, [0.5], -1)
-        return screen
 
     def is_hit(self, x: int, y: int) -> bool:
         if abs(x - self.x_position) + abs(y - self.y_position) < HIT_RADIUS:

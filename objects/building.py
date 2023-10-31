@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from tank import BLAST_RADIUS
+from utils.constants import BLAST_RADIUS
 
 
 class Building:
@@ -42,11 +42,6 @@ class Building:
 
     def is_hit(self, x: int, y: int) -> bool:
         if self.x_position - self.width // 2 <= x <= self.x_position + self.width // 2 and self.height > y:
-            for hit in self.hits:
-                if (x - hit[0])**2 + (y-hit[1])**2 < BLAST_RADIUS**2:
-                    return False
-
-            self.hits.append((x, y))
             return True
 
         return False

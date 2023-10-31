@@ -1,18 +1,17 @@
-import math
 import random
 from abc import ABCMeta, abstractmethod
 from functools import cached_property
 
-import cv2
 import numpy as np
 from pyaxidraw.axidraw import AxiDraw
 
-from building import Building
-from explosion import Explosion
+from objects.building import Building
+from objects.explosion import Explosion
 from output.axidraw_plotter import AxidrawPlotter
 from output.output_device import OutputDevice
 from output.screen_plotter import ScreenPlotter
-from tank import Tank, BLAST_RADIUS
+from objects.tank import Tank
+from utils.constants import BLAST_RADIUS
 
 
 class TankGame(metaclass=ABCMeta):
@@ -114,8 +113,13 @@ class TwoPlayerTankGame(TankGame):
                 self.game_over = True
                 return True
 
+        for explosion in self.explosions:
+            if explosion.is_hit(x, y):
+                return False
+
         for building in self.buildings:
             if building.is_hit(x, y):
+                self.explosions.append(Explosion(x, y, BLAST_RADIUS))
                 return True
 
         return False
