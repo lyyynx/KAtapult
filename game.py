@@ -11,7 +11,7 @@ from output.axidraw_plotter import AxidrawPlotter
 from output.output_device import OutputDevice
 from output.screen_plotter import ScreenPlotter
 from objects.tank import Tank
-from utils.constants import BLAST_RADIUS
+from utils.constants import BLAST_RADIUS, HIT_RADIUS
 
 
 class TankGame(metaclass=ABCMeta):
@@ -56,7 +56,7 @@ class TwoPlayerTankGame(TankGame):
 
             if abs(building_x < 10):
                 self.buildings.append(
-                    Building(building_x, random.randint(10, self.height - 10), width=20 + distance_to_edge)
+                    Building(building_x, random.randint(30, self.height - 10), width=20 + distance_to_edge)
                 )
 
             self.buildings.append(
@@ -81,7 +81,7 @@ class TwoPlayerTankGame(TankGame):
         self.tanks[-1] = Tank(self.width - 5, max_right_height)
 
     def start_game(self) -> None:
-        self.create_buildings(3)
+        self.create_buildings(5)
         self.place_tanks()
         self.draw_playground()
 
@@ -103,7 +103,7 @@ class TwoPlayerTankGame(TankGame):
                 self.output_device.draw_circle((x_, self.height - y_), BLAST_RADIUS)
                 break
 
-            if projectile_x < 0 or projectile_x > self.width or projectile_y < 0:
+            if projectile_x < 0 or projectile_x >= self.width or projectile_y < 0:
                 self.output_device.draw_path(projectile_path)
                 break
 
@@ -152,8 +152,8 @@ class TwoPlayerTankGame(TankGame):
 
         for tank in self.tanks.values():
             self.output_device.draw_rectangle(
-                (tank.x_position - 5, self.height - tank.y_position + 5),
-                (tank.x_position + 5, self.height - tank.y_position - 5),
+                (tank.x_position - HIT_RADIUS, self.height - tank.y_position + HIT_RADIUS),
+                (tank.x_position + HIT_RADIUS, self.height - tank.y_position - HIT_RADIUS),
             )
 
     @cached_property

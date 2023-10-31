@@ -43,19 +43,21 @@ class AxidrawPlotter(OutputDevice):
         for point in circle_points:
             self.output.lineto(*point)
 
+        self.output.lineto(*circle_points[0])
         self.output.penup()
         self.output.goto(0, 0)
 
     def draw_path(self, path: list[tuple[int, int]]) -> None:
         path_ = [(point[0] * PX_TO_INCH, point[1] * PX_TO_INCH) for point in path]
+        self.output.goto(*path_[0])
 
         for i in range(0, len(path_), 20):
             try:
+                self.output.pendown()
                 self.output.goto(*path_[i])
-                self.output.pendown()
 
+                self.output.penup()
                 self.output.goto(*path_[i+10])
-                self.output.pendown()
             except IndexError:
                 break
 
