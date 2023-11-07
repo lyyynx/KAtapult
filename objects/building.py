@@ -8,19 +8,9 @@ class Building(Drawable):
         self.width = width
 
     def is_hit(self, x: int, y: int) -> bool:
-        if (
-            self.x_position - self.width // 2 <= x <= self.x_position + self.width // 2
-            and self.height > y
-        ):
-            return True
-
+        # todo: define hit detection
         return False
 
     @property
     def sprite(self) -> list[Rectangle | Circle]:
-        return [
-            Rectangle(
-                top_left=(self.x_position - self.width // 2, self.height),
-                bottom_right=(self.x_position + self.width // 2, 0),
-            )
-        ]
+        return []  # todo: define sprite

@@ -51,40 +51,11 @@ class TwoPlayerTankGame(TankGame):
 
     def create_buildings(self, number_of_buildings: int) -> None:
         standard_width = 30
-        for _ in range(number_of_buildings):
-            building_x = random.randint(10, self.width - 10)
-            distance_to_edge = min(building_x - standard_width // 2, self.width - building_x + standard_width // 2)
-
-            if abs(distance_to_edge < 15):
-                self.buildings.append(
-                    Building(
-                        building_x,
-                        height=random.randint(standard_width, self.height - 10),
-                        width=standard_width + 2*distance_to_edge,
-                    )
-                )
-
-            else:
-                self.buildings.append(
-                    Building(building_x, random.randint(standard_width, self.height - 10))
-                )
+        # todo: create buildings
 
     def place_tanks(self) -> None:
-        buildings_on_left = [
-            building.height
-            for building in self.buildings
-            if building.x_position - building.width < 5
-        ]
-        max_left_height = max(buildings_on_left) if len(buildings_on_left) > 0 else 0
-        self.tanks[1] = Tank(5, max_left_height)
-
-        buildings_on_right = [
-            building.height
-            for building in self.buildings
-            if building.x_position + building.width // 2 > self.width - 5
-        ]
-        max_right_height = max(buildings_on_right) if len(buildings_on_right) > 0 else 0
-        self.tanks[-1] = Tank(self.width - 5, max_right_height)
+        # todo: place tanks on left and right edge
+        ...
 
     def start_game(self) -> None:
         self.create_buildings(5)
@@ -97,50 +68,19 @@ class TwoPlayerTankGame(TankGame):
             self.active_player *= -1
 
     def shoot(self, angle: int, force: int) -> None:
-        projectile_path: list[tuple[int, int]] = []
-        for i, (projectile_x, projectile_y) in enumerate(
-            self.tanks[self.active_player].shoot(angle, force * 10)
-        ):
-            x_, y_ = int(projectile_x), int(projectile_y)
-            projectile_path.append((x_, y_))
-
-            if self._check_and_hit(x_, y_):
-                self.output_device.draw_path(projectile_path)
-                self.output_device.draw_circle((x_, y_), BLAST_RADIUS)
-                break
-
-            if projectile_x < 0 or projectile_x >= self.width or projectile_y < 0:
-                self.output_device.draw_path(projectile_path)
-                break
+        # todo: get shot from tank
+        ...
 
     def _check_and_hit(self, x: int, y: int) -> bool:
-        for tank in self.tanks.values():
-            if tank.is_hit(x, y):
-                self.game_over = True
-                return True
-
-        for explosion in self.explosions:
-            if explosion.is_hit(x, y):
-                return False
-
-        for building in self.buildings:
-            if building.is_hit(x, y):
-                self.explosions.append(Explosion(x, y, BLAST_RADIUS))
-                return True
+        # todo: check if building or tank is hit
+        # if building is hit, add explosion
 
         return False
 
     def _get_command(self) -> tuple[int, int]:
         angle_, force_ = None, None
 
-        while angle_ is None:
-            try:
-                angle, force = input(
-                    f"Player {self.active_player}: Enter angle and velocity (i.e. 50 160) "
-                ).split()
-                angle_, force_ = int(angle), int(force)
-            except ValueError:
-                print("Expected two integers (e.g. 50 500)")
+        # todo: get input from console
 
         return angle_, force_
 

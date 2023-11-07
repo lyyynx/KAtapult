@@ -9,11 +9,10 @@ class Explosion(Drawable):
         self.radius = radius
 
     def is_hit(self, x: int, y: int) -> bool:
-        if (x - self.x) ** 2 + (y - self.y) ** 2 < BLAST_RADIUS**2:
-            return True
+        # todo: define hit detection
 
         return False
 
     @property
     def sprite(self) -> list[Rectangle | Circle]:
-        return [Circle(center=(self.x, self.y), radius=BLAST_RADIUS)]
+        return []  # todo: define sprite
