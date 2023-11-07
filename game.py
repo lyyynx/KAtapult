@@ -7,11 +7,11 @@ from pyaxidraw.axidraw import AxiDraw
 
 from objects.building import Building
 from objects.explosion import Explosion
+from objects.tank import Tank
 from output.axidraw_plotter import AxidrawPlotter
 from output.output_device import OutputDevice
 from output.screen_plotter import ScreenPlotter
-from objects.tank import Tank
-from utils.constants import BLAST_RADIUS, HIT_RADIUS
+from utils.constants import BLAST_RADIUS
 
 
 class TankGame(metaclass=ABCMeta):
@@ -50,18 +50,24 @@ class TwoPlayerTankGame(TankGame):
         self.active_player = 1
 
     def create_buildings(self, number_of_buildings: int) -> None:
+        standard_width = 30
         for _ in range(number_of_buildings):
-            building_x = random.randint(10, self.width-10)
-            distance_to_edge = min(building_x - 20, self.width - building_x + 20)
+            building_x = random.randint(10, self.width - 10)
+            distance_to_edge = min(building_x - standard_width // 2, self.width - building_x + standard_width // 2)
 
-            if abs(building_x < 10):
+            if abs(distance_to_edge < 15):
                 self.buildings.append(
-                    Building(building_x, random.randint(30, self.height - 10), width=20 + distance_to_edge)
+                    Building(
+                        building_x,
+                        height=random.randint(standard_width, self.height - 10),
+                        width=standard_width + 2*distance_to_edge,
+                    )
                 )
 
-            self.buildings.append(
-                Building(building_x, random.randint(10, self.height-10))
-            )
+            else:
+                self.buildings.append(
+                    Building(building_x, random.randint(standard_width, self.height - 10))
+                )
 
     def place_tanks(self) -> None:
         buildings_on_left = [
@@ -75,7 +81,7 @@ class TwoPlayerTankGame(TankGame):
         buildings_on_right = [
             building.height
             for building in self.buildings
-            if building.x_position + building.width > self.width - 5
+            if building.x_position + building.width // 2 > self.width - 5
         ]
         max_right_height = max(buildings_on_right) if len(buildings_on_right) > 0 else 0
         self.tanks[-1] = Tank(self.width - 5, max_right_height)
@@ -93,14 +99,14 @@ class TwoPlayerTankGame(TankGame):
     def shoot(self, angle: int, force: int) -> None:
         projectile_path: list[tuple[int, int]] = []
         for i, (projectile_x, projectile_y) in enumerate(
-                self.tanks[self.active_player].shoot(angle, force * 10)
+            self.tanks[self.active_player].shoot(angle, force * 10)
         ):
             x_, y_ = int(projectile_x), int(projectile_y)
-            projectile_path.append((x_, self.height - y_))
+            projectile_path.append((x_, y_))
 
             if self._check_and_hit(x_, y_):
                 self.output_device.draw_path(projectile_path)
-                self.output_device.draw_circle((x_, self.height - y_), BLAST_RADIUS)
+                self.output_device.draw_circle((x_, y_), BLAST_RADIUS)
                 break
 
             if projectile_x < 0 or projectile_x >= self.width or projectile_y < 0:
@@ -142,19 +148,10 @@ class TwoPlayerTankGame(TankGame):
         self.output_device.draw_rectangle((0, 0), (self.width, self.height))
 
         for building in self.buildings:
-            self.output_device.draw_rectangle(
-                (
-                    building.x_position - building.width // 2,
-                    self.height - building.height,
-                ),
-                (building.x_position + building.width // 2, self.height),
-            )
+            self.output_device.draw_sprite(building.sprite)
 
         for tank in self.tanks.values():
-            self.output_device.draw_rectangle(
-                (tank.x_position - HIT_RADIUS, self.height - tank.y_position + HIT_RADIUS),
-                (tank.x_position + HIT_RADIUS, self.height - tank.y_position - HIT_RADIUS),
-            )
+            self.output_device.draw_sprite(tank.sprite)
 
     @cached_property
     def output_device(self) -> OutputDevice:

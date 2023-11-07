@@ -15,8 +15,8 @@ class AxidrawPlotter(OutputDevice):
     def draw_rectangle(
         self, top_left: tuple[int, int], bottom_right: tuple[int, int]
     ) -> None:
-        top_left_ = (top_left[0] * PX_TO_INCH, top_left[1] * PX_TO_INCH)
-        bottom_right_ = (bottom_right[0] * PX_TO_INCH, bottom_right[1] * PX_TO_INCH)
+        top_left_ = (top_left[0] * PX_TO_INCH, (self.height - top_left[1]) * PX_TO_INCH)
+        bottom_right_ = (bottom_right[0] * PX_TO_INCH, (self.height - bottom_right[1]) * PX_TO_INCH)
 
         self.output.goto(*top_left_)
         self.output.pendown()
@@ -32,7 +32,7 @@ class AxidrawPlotter(OutputDevice):
         for phi in range(0, 360, 20):
             x, y = (
                 radius * math.sin(phi * ANGLE_TO_RADIANS) + center[0],
-                radius * math.cos(phi * ANGLE_TO_RADIANS) + center[1],
+                radius * math.cos(phi * ANGLE_TO_RADIANS) + (self.height - center[1]),
             )
             if 0 < x < self.width and 0 < y < self.height:
                 circle_points.append((x * PX_TO_INCH, y * PX_TO_INCH))
@@ -48,7 +48,7 @@ class AxidrawPlotter(OutputDevice):
         self.output.goto(0, 0)
 
     def draw_path(self, path: list[tuple[int, int]]) -> None:
-        path_ = [(point[0] * PX_TO_INCH, point[1] * PX_TO_INCH) for point in path]
+        path_ = [(point[0] * PX_TO_INCH, (self.height - point[1]) * PX_TO_INCH) for point in path]
         self.output.goto(*path_[0])
 
         for i in range(0, len(path_), 20):

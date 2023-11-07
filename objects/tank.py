@@ -2,11 +2,12 @@ import math
 from functools import cached_property
 from typing import Literal, Generator
 
+from output.drawable import Drawable, Rectangle, Circle
 from utils.constants import HIT_RADIUS
 from utils.units import GRAVITATIONAL_CONSTANT
 
 
-class Tank:
+class Tank(Drawable):
     def __init__(self, x_position: int, y_position: int) -> None:
         self.x_position = x_position
         self.y_position = y_position
@@ -16,9 +17,11 @@ class Tank:
         for i in range(HIT_RADIUS + 2, 1000):
             x_i = self.direction * i + self.x_position
             y_i = (
-                    - GRAVITATIONAL_CONSTANT * i ** 2 / (2 * velocity * math.cos(angle_) ** 2)
-                    + i * math.tan(angle_ * self.direction)
-                    + self.y_position
+                -GRAVITATIONAL_CONSTANT
+                * i**2
+                / (2 * velocity * math.cos(angle_) ** 2)
+                + i * math.tan(angle_ * self.direction)
+                + self.y_position
             )
 
             yield x_i, y_i
@@ -36,3 +39,15 @@ class Tank:
             return 1
         else:
             return -1
+
+    @property
+    def sprite(self) -> list[Rectangle | Circle]:
+        return [
+            Rectangle(
+                top_left=(self.x_position - HIT_RADIUS, self.y_position - HIT_RADIUS),
+                bottom_right=(
+                    self.x_position + HIT_RADIUS,
+                    self.y_position + HIT_RADIUS,
+                ),
+            )
+        ]

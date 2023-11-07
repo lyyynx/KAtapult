@@ -1,7 +1,8 @@
+from output.drawable import Drawable, Rectangle, Circle
 from utils.constants import BLAST_RADIUS
 
 
-class Explosion:
+class Explosion(Drawable):
     def __init__(self, x: int, y: int, radius: int) -> None:
         self.x = x
         self.y = y
@@ -12,3 +13,7 @@ class Explosion:
             return True
 
         return False
+
+    @property
+    def sprite(self) -> list[Rectangle | Circle]:
+        return [Circle(center=(self.x, self.y), radius=BLAST_RADIUS)]
