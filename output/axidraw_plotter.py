@@ -67,8 +67,13 @@ class AxidrawPlotter(OutputDevice):
     def draw_line(
         self, first_point: tuple[int, int], second_point: tuple[int, int]
     ) -> None:
-        self.output.pendown()
-        self.output.goto(*first_point)
+        first_point_ = (first_point[0], self.height - first_point[1])
+        second_point_ = (second_point[0], self.height - second_point[1])
 
+        self.output.goto(*first_point_)
+        self.output.pendown()
+
+        self.output.goto(*second_point_)
         self.output.penup()
-        self.output.goto(*second_point)
+
+        self.output.goto(0, 0)
