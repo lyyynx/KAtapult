@@ -12,7 +12,7 @@ class Tank(Drawable):
         self.x_position = x_position
         self.y_position = y_position
 
-    def shoot(self, angle: int, velocity: int) -> Generator[None, None, None]:
+    def shoot(self, angle: int, velocity: int) -> Generator[tuple[int, float], None, None]:
         angle_ = self.direction * angle * math.pi / 180
         for i in range(HIT_RADIUS + 2, 1000):
             x_i = self.direction * i + self.x_position

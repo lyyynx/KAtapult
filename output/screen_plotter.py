@@ -5,6 +5,7 @@ from output.output_device import OutputDevice
 
 
 class ScreenPlotter(OutputDevice):
+    line_thickness = 2
     def __init__(self, screen: np.array, width: int, height: int) -> None:
         self.screen = screen
         self.width = width
@@ -19,15 +20,15 @@ class ScreenPlotter(OutputDevice):
             self.screen,
             (top_left[0], self.height - top_left[1]),
             (bottom_right[0], self.height - bottom_right[1]),
-            [0],
-            4,
+            (0, 0, 0),
+            self.line_thickness,
         )
         cv2.imshow("KAtapult", self.screen)
         cv2.waitKey(1)
 
     def draw_circle(self, center: tuple[int, int], radius: int) -> None:
         self.screen = cv2.circle(
-            self.screen, (center[0], self.height - center[1]), radius, [0], 4
+            self.screen, (center[0], self.height - center[1]), radius, [0], self.line_thickness
         )
         cv2.imshow("KAtapult", self.screen)
         cv2.waitKey(1)
@@ -45,7 +46,7 @@ class ScreenPlotter(OutputDevice):
                 (point_a[0], self.height - point_a[1]),
                 (point_b[0], self.height - point_b[1]),
                 [0],
-                4,
+                self.line_thickness,
             )
 
         cv2.imshow("KAtapult", self.screen)
