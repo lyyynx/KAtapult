@@ -3,12 +3,12 @@ from abc import ABCMeta, abstractmethod
 from functools import cached_property
 
 import numpy as np
-from pyaxidraw.axidraw import AxiDraw
+# from pyaxidraw.axidraw import AxiDraw
 
 from objects.building import Building
 from objects.explosion import Explosion
 from objects.tank import Tank
-from output.axidraw_plotter import AxidrawPlotter
+# from output.axidraw_plotter import AxidrawPlotter
 from output.output_device import OutputDevice
 from output.screen_plotter import ScreenPlotter
 from utils.constants import BLAST_RADIUS
@@ -43,7 +43,7 @@ class TankGame(metaclass=ABCMeta):
 
 
 class TwoPlayerTankGame(TankGame):
-    def __init__(self, output: AxiDraw | None = None) -> None:
+    def __init__(self, output: None = None) -> None:
         super().__init__(595, 375)
         self.output = output
 
@@ -51,23 +51,36 @@ class TwoPlayerTankGame(TankGame):
 
     def create_buildings(self, number_of_buildings: int) -> None:
         standard_width = 30
+        min_building_distance = 10
+
         for _ in range(number_of_buildings):
-            building_x = random.randint(10, self.width - 10)
-            distance_to_edge = min(building_x - standard_width // 2, self.width - building_x + standard_width // 2)
+            for i in range(20):
+                building_x = random.randint(50, self.width - 50)
+                collision = False
+                for building in self.buildings:
+                    if abs(building_x - building.x_position) < (
+                            standard_width + building.width) / 2 + min_building_distance:
+                        collision = True
+                        break
+                if collision:
+                    continue
 
-            if abs(distance_to_edge < 15):
-                self.buildings.append(
-                    Building(
-                        building_x,
-                        height=random.randint(standard_width, self.height - 10),
-                        width=standard_width + 2*distance_to_edge,
+                distance_to_edge = min(building_x - standard_width // 2, self.width - building_x + standard_width // 2)
+
+                if abs(distance_to_edge < 15):
+                    self.buildings.append(
+                        Building(
+                            building_x,
+                            height=random.randint(30, self.height - 10),
+                            width=standard_width + 2 * distance_to_edge,
+                        )
                     )
-                )
 
-            else:
-                self.buildings.append(
-                    Building(building_x, random.randint(standard_width, self.height - 10))
-                )
+                else:
+                    self.buildings.append(
+                        Building(building_x, random.randint(30, self.height - 10))
+                    )
+                break
 
     def place_tanks(self) -> None:
         buildings_on_left = [
@@ -99,36 +112,36 @@ class TwoPlayerTankGame(TankGame):
     def shoot(self, angle: int, force: int) -> None:
         projectile_path: list[tuple[int, int]] = []
         for i, (projectile_x, projectile_y) in enumerate(
-            self.tanks[self.active_player].shoot(angle, force * 10)
+                self.tanks[self.active_player].shoot(angle, force * 10)
         ):
             x_, y_ = int(projectile_x), int(projectile_y)
             projectile_path.append((x_, y_))
-
-            if self._check_and_hit(x_, y_):
+            is_hit, hit_object = self._check_and_hit(x_, y_)
+            if is_hit:
                 self.output_device.draw_path(projectile_path)
-                self.output_device.draw_circle((x_, y_), BLAST_RADIUS)
+                self.process_hit(x_, y_, hit_object)
                 break
 
             if projectile_x < 0 or projectile_x >= self.width or projectile_y < 0:
                 self.output_device.draw_path(projectile_path)
                 break
 
-    def _check_and_hit(self, x: int, y: int) -> bool:
+    def _check_and_hit(self, x: int, y: int) -> tuple[bool, Tank | Building | None]:
         for tank in self.tanks.values():
             if tank.is_hit(x, y):
                 self.game_over = True
-                return True
+                return True, tank
 
         for explosion in self.explosions:
             if explosion.is_hit(x, y):
-                return False
+                return False, None
 
         for building in self.buildings:
             if building.is_hit(x, y):
                 self.explosions.append(Explosion(x, y, BLAST_RADIUS))
-                return True
+                return True, building
 
-        return False
+        return False, None
 
     def _get_command(self) -> tuple[int, int]:
         angle_, force_ = None, None
@@ -157,7 +170,17 @@ class TwoPlayerTankGame(TankGame):
     def output_device(self) -> OutputDevice:
         if self.output is None:
             return ScreenPlotter(self.screen, self.width, self.height)
-        elif isinstance(self.output, AxiDraw):
-            return AxidrawPlotter(self.output, self.width, self.height)
         else:
             raise ValueError(f"Unknown output type {self.output}")
+
+    def process_hit(self, x_: int, y_: int, hit_object: Tank | Building) -> None:
+        if isinstance(hit_object, Building):
+            self.output_device.draw_circle((x_, y_), BLAST_RADIUS)
+            if hit_object.health == 1:
+                top_left = (hit_object.x_position - hit_object.width // 2,  hit_object.height)
+                bottom_right = (hit_object.x_position + hit_object.width // 2, 0)
+                self.output_device.draw_line(top_left, bottom_right)
+            elif hit_object.health == 0:
+                top_right = (hit_object.x_position + hit_object.width // 2,  hit_object.height)
+                bottom_left = (hit_object.x_position - hit_object.width // 2, 0)
+                self.output_device.draw_line(top_right, bottom_left)
