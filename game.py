@@ -3,12 +3,12 @@ from abc import ABCMeta, abstractmethod
 from functools import cached_property
 
 import numpy as np
-# from pyaxidraw.axidraw import AxiDraw
+from pyaxidraw.axidraw import AxiDraw
 
 from objects.building import Building
 from objects.explosion import Explosion
 from objects.tank import Tank
-# from output.axidraw_plotter import AxidrawPlotter
+from output.axidraw_plotter import AxidrawPlotter
 from output.output_device import OutputDevice
 from output.screen_plotter import ScreenPlotter
 from utils.constants import BLAST_RADIUS
@@ -43,7 +43,7 @@ class TankGame(metaclass=ABCMeta):
 
 
 class TwoPlayerTankGame(TankGame):
-    def __init__(self, output: None = None) -> None:
+    def __init__(self, output: AxiDraw | None = None) -> None:
         super().__init__(595, 375)
         self.output = output
 
@@ -112,7 +112,7 @@ class TwoPlayerTankGame(TankGame):
     def shoot(self, angle: int, force: int) -> None:
         projectile_path: list[tuple[int, int]] = []
         for i, (projectile_x, projectile_y) in enumerate(
-                self.tanks[self.active_player].shoot(angle, force * 10)
+            self.tanks[self.active_player].shoot(angle, force * 10)
         ):
             x_, y_ = int(projectile_x), int(projectile_y)
             projectile_path.append((x_, y_))
@@ -170,6 +170,8 @@ class TwoPlayerTankGame(TankGame):
     def output_device(self) -> OutputDevice:
         if self.output is None:
             return ScreenPlotter(self.screen, self.width, self.height)
+        elif isinstance(self.output, AxiDraw):
+            return AxidrawPlotter(self.output, self.width, self.height)
         else:
             raise ValueError(f"Unknown output type {self.output}")
 

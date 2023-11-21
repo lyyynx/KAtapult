@@ -18,7 +18,9 @@ class OutputDevice(metaclass=ABCMeta):
     def draw_path(self, path: list[tuple[int, int]]) -> None:
         ...
 
-    def draw_line (self, first_point: tuple[int,int], second_point: tuple[int,int]) -> None:
+    def draw_line(
+        self, first_point: tuple[int, int], second_point: tuple[int, int]
+    ) -> None:
         ...
 
     def draw_sprite(self, sprite: list[Rectangle | Circle]) -> None:
