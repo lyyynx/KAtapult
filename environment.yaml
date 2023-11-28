@@ -2,9 +2,13 @@ name: katapult
 channels:
   - conda-forge
 dependencies:
-  - python>=3.11
+  - python>=3.11,<3.12
   - numpy>=1.2,<2
   - pytest>=6.0,<7
   - pip>=23
+  - lxml>=4.9,<5
+  - requests>=2.31,<3
+  - tqdm>=4.66,<5
   - pip:
       - opencv-python>=4.8,<5
+      - plotink>=1.8,<2

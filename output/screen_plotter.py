@@ -32,6 +32,17 @@ class ScreenPlotter(OutputDevice):
         cv2.imshow("KAtapult", self.screen)
         cv2.waitKey(1)
 
+    def draw_line (self, first_point: tuple[int,int], second_point: tuple[int,int]) -> None:
+        self.screen = cv2.line(
+            self.screen,
+            (second_point[0], self.height - second_point[1]),
+            (first_point[0], self.height - first_point[1]),
+            [0],
+            4,
+        )
+        cv2.imshow("KAtapult", self.screen)
+        cv2.waitKey(1)
+
     def draw_path(self, path: list[tuple[int, int]]) -> None:
         for i in range(0, len(path), 20):
             try:

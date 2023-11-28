@@ -13,18 +13,41 @@ class Tank(Drawable):
         self.y_position = y_position
 
     def shoot(self, angle: int, velocity: int) -> Generator[None, None, None]:
-        # todo implement shot
-        ...
+        angle_ = self.direction * angle * math.pi / 180
+        for i in range(HIT_RADIUS + 2, 1000):
+            x_i = self.direction * i + self.x_position
+            y_i = (
+                -GRAVITATIONAL_CONSTANT
+                * i**2
+                / (2 * velocity * math.cos(angle_) ** 2)
+                + i * math.tan(angle_ * self.direction)
+                + self.y_position
+            )
+
+            yield x_i, y_i
 
     def is_hit(self, x: int, y: int) -> bool:
-        # todo: implement hit detection
-        ...
+        if abs(x - self.x_position) + abs(y - self.y_position) < HIT_RADIUS:
+            print(f"Player {-self.direction} wins!")
+            return True
+
+        return False
 
     @cached_property
     def direction(self) -> Literal[1, -1]:
-        # todo: implement direction tank is shooting to (1=right, -1=left)
-        ...
+        if self.x_position < 10:
+            return 1
+        else:
+            return -1
 
     @property
     def sprite(self) -> list[Rectangle | Circle]:
-        return []  # todo: define tank shape
+        return [
+            Rectangle(
+                top_left=(self.x_position - HIT_RADIUS, self.y_position - HIT_RADIUS),
+                bottom_right=(
+                    self.x_position + HIT_RADIUS,
+                    self.y_position + HIT_RADIUS,
+                ),
+            )
+        ]
