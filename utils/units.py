@@ -6,3 +6,5 @@ GRAVITATIONAL_CONSTANT = 9.81
 
 neue_konstante = "oopsy"
 ne_andere_konstante = 10
+
+print("all constants are :", ne_andere_konstante)
