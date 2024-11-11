@@ -5,3 +5,4 @@ PX_TO_INCH = 1 / 96
 GRAVITATIONAL_CONSTANT = 9.81
 
 neue_konstante = 3
+ne_andere_konstante = 4
